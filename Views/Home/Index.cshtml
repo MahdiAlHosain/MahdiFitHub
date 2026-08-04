@@ -1,0 +1,44 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة المتابعة";
+}
+<header class="page-header hero-header">
+    <div>
+        <span class="eyebrow">نظرة اليوم</span>
+        <h1>أهلًا، @User.Identity?.Name</h1>
+        <p>كل ما تحتاجه لتشغيل النادي بوضوح وسرعة.</p>
+    </div>
+    @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.Trainer))
+    {
+        <a class="button primary" asp-controller="Sessions" asp-action="Create">+ جدولة حصة</a>
+    }
+</header>
+<section class="metrics">
+    <article><span>الأعضاء النشطون</span><strong>@Model.ActiveMembers</strong><i class="metric-line mint"></i></article>
+    <article><span>المدربون</span><strong>@Model.Trainers</strong><i class="metric-line violet"></i></article>
+    <article><span>الحصص القادمة</span><strong>@Model.UpcomingSessions</strong><i class="metric-line orange"></i></article>
+    <article><span>إجمالي الحجوزات</span><strong>@Model.TotalBookings</strong><i class="metric-line blue"></i></article>
+</section>
+<section class="panel">
+    <div class="panel-heading">
+        <div><span class="eyebrow">الجدول</span><h2>الحصص الأقرب</h2></div>
+        <a asp-controller="Sessions" asp-action="Index">عرض الكل ←</a>
+    </div>
+    @if (Model.NextSessions.Count == 0)
+    {
+        <p class="empty-row">لا توجد حصص قادمة.</p>
+    }
+    else
+    {
+        <div class="session-list compact">
+        @foreach (var session in Model.NextSessions)
+        {
+            <article>
+                <time><strong>@session.StartsAtUtc.ToLocalTime().ToString("dd")</strong><span>@session.StartsAtUtc.ToLocalTime().ToString("MMM")</span></time>
+                <div><h3>@session.Title</h3><p>@session.Room · @session.Trainer?.FullName</p></div>
+                <div class="session-meta"><strong>@session.StartsAtUtc.ToLocalTime().ToString("HH:mm")</strong><span>@session.Bookings.Count / @session.Capacity مشترك</span></div>
+            </article>
+        }
+        </div>
+    }
+</section>
