@@ -1,0 +1,17 @@
+@model CreateUserViewModel
+@{
+    ViewData["Title"] = "حساب جديد";
+}
+<header class="page-header"><div><span class="eyebrow">إضافة مستخدم</span><h1>إنشاء حساب جديد</h1><p>يمكنك إضافة عضو أو مدرب أو مسؤول.</p></div></header>
+<section class="panel form-panel">
+    <form asp-action="Create" method="post" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="validation full"></div>
+        <div><label asp-for="FullName">الاسم الكامل</label><input asp-for="FullName" /><span asp-validation-for="FullName" class="validation"></span></div>
+        <div><label asp-for="Email">البريد الإلكتروني</label><input asp-for="Email" /><span asp-validation-for="Email" class="validation"></span></div>
+        <div><label asp-for="Password">كلمة المرور المؤقتة</label><input asp-for="Password" /><span asp-validation-for="Password" class="validation"></span></div>
+        <div><label asp-for="Phone">رقم الهاتف</label><input asp-for="Phone" /><span asp-validation-for="Phone" class="validation"></span></div>
+        <div><label asp-for="Role">الدور</label><select asp-for="Role"><option value="Member">عضو</option><option value="Trainer">مدرب</option><option value="Admin">مسؤول</option></select></div>
+        <div><label asp-for="MembershipPlanId">باقة العضو</label><select asp-for="MembershipPlanId" asp-items="ViewBag.Plans"><option value="">بدون باقة</option></select></div>
+        <div class="actions full"><a class="button ghost" asp-action="Index">إلغاء</a><button class="button primary" type="submit">حفظ الحساب</button></div>
+    </form>
+</section>

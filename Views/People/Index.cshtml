@@ -1,0 +1,38 @@
+@model IReadOnlyList<AppUser>
+@{
+    ViewData["Title"] = "الأعضاء والفريق";
+}
+<header class="page-header">
+    <div><span class="eyebrow">إدارة الحسابات</span><h1>الأعضاء والفريق</h1><p>تابع الصلاحيات والاشتراكات وحالة الحسابات.</p></div>
+    <a class="button primary" asp-action="Create">+ حساب جديد</a>
+</header>
+<div class="filters">
+    <a class="@(ViewBag.Role is null ? "active" : "")" asp-action="Index">الكل</a>
+    <a class="@(ViewBag.Role == UserRoles.Member ? "active" : "")" asp-action="Index" asp-route-role="Member">الأعضاء</a>
+    <a class="@(ViewBag.Role == UserRoles.Trainer ? "active" : "")" asp-action="Index" asp-route-role="Trainer">المدربون</a>
+    <a class="@(ViewBag.Role == UserRoles.Admin ? "active" : "")" asp-action="Index" asp-route-role="Admin">الإدارة</a>
+</div>
+<section class="panel table-panel">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>الاسم</th><th>الدور</th><th>البريد</th><th>الاشتراك</th><th>الحالة</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var person in Model)
+            {
+                <tr>
+                    <td><strong>@person.FullName</strong><small>@person.Phone</small></td>
+                    <td><span class="role role-@person.Role.ToLowerInvariant()">@person.Role</span></td>
+                    <td>@person.Email</td>
+                    <td>@(person.MembershipPlan?.Name ?? "—")</td>
+                    <td><span class="status @(person.IsActive ? "on" : "off")">@(person.IsActive ? "نشط" : "متوقف")</span></td>
+                    <td>
+                        <form asp-action="Toggle" asp-route-id="@person.Id" method="post">
+                            <button class="button ghost small" type="submit">@(person.IsActive ? "إيقاف" : "تفعيل")</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
