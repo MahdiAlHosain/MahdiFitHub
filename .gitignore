@@ -1,0 +1,9 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+App_Data/*.json
+App_Data/keys/
+.idea/
+.vscode/
