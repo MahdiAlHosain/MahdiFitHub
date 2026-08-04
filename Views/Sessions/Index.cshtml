@@ -1,0 +1,35 @@
+@model IReadOnlyList<GymSession>
+@{
+    ViewData["Title"] = "الحصص";
+    var booked = (IReadOnlyCollection<int>)ViewBag.BookedSessionIds;
+}
+<header class="page-header">
+    <div><span class="eyebrow">جدول التدريب</span><h1>الحصص والحجوزات</h1><p>استعرض المقاعد والمدربين والمواعيد القادمة.</p></div>
+    @if (User.IsInRole(UserRoles.Admin) || User.IsInRole(UserRoles.Trainer))
+    { <a class="button primary" asp-action="Create">+ جدولة حصة</a> }
+</header>
+<section class="session-list">
+@foreach (var session in Model)
+{
+    var isBooked = booked.Contains(session.Id);
+    var remaining = session.Capacity - session.Bookings.Count;
+    <article>
+        <time><strong>@session.StartsAtUtc.ToLocalTime().ToString("dd")</strong><span>@session.StartsAtUtc.ToLocalTime().ToString("MMM")</span></time>
+        <div class="session-copy"><h2>@session.Title</h2><p>@session.Description</p><div class="tags"><span>@session.Room</span><span>@session.DurationMinutes دقيقة</span><span>المدرب: @session.Trainer?.FullName</span></div></div>
+        <div class="session-actions">
+            <strong>@session.StartsAtUtc.ToLocalTime().ToString("HH:mm")</strong>
+            <span class="seats @(remaining == 0 ? "full" : "")">@remaining مقعد متبقٍ</span>
+            @if (User.IsInRole(UserRoles.Member))
+            {
+                <form asp-action="@(isBooked ? "Cancel" : "Book")" asp-route-id="@session.Id" method="post">
+                    <button class="button @(isBooked ? "ghost" : "primary")" disabled="@(!isBooked && remaining == 0)" type="submit">@(isBooked ? "إلغاء حجزي" : "احجز مقعدًا")</button>
+                </form>
+            }
+            @if (User.IsInRole(UserRoles.Admin))
+            {
+                <form asp-action="Delete" asp-route-id="@session.Id" method="post" onsubmit="return confirm('حذف الحصة وجميع حجوزاتها؟')"><button class="link-button danger" type="submit">حذف الحصة</button></form>
+            }
+        </div>
+    </article>
+}
+</section>

@@ -1,0 +1,18 @@
+@model CreateSessionViewModel
+@{
+    ViewData["Title"] = "جدولة حصة";
+}
+<header class="page-header"><div><span class="eyebrow">موعد جديد</span><h1>جدولة حصة تدريبية</h1><p>حدد الموعد والسعة والمدرب المسؤول.</p></div></header>
+<section class="panel form-panel">
+    <form asp-action="Create" method="post" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="validation full"></div>
+        <div><label asp-for="Title">عنوان الحصة</label><input asp-for="Title" /><span asp-validation-for="Title" class="validation"></span></div>
+        <div><label asp-for="TrainerId">المدرب</label><select asp-for="TrainerId" asp-items="ViewBag.Trainers"><option value="">اختر مدربًا</option></select><span asp-validation-for="TrainerId" class="validation"></span></div>
+        <div class="full"><label asp-for="Description">وصف مختصر</label><textarea asp-for="Description" rows="3"></textarea><span asp-validation-for="Description" class="validation"></span></div>
+        <div><label asp-for="Room">القاعة</label><input asp-for="Room" /><span asp-validation-for="Room" class="validation"></span></div>
+        <div><label asp-for="StartsAtLocal">الموعد</label><input asp-for="StartsAtLocal" type="datetime-local" /><span asp-validation-for="StartsAtLocal" class="validation"></span></div>
+        <div><label asp-for="DurationMinutes">المدة بالدقائق</label><input asp-for="DurationMinutes" /><span asp-validation-for="DurationMinutes" class="validation"></span></div>
+        <div><label asp-for="Capacity">عدد المقاعد</label><input asp-for="Capacity" /><span asp-validation-for="Capacity" class="validation"></span></div>
+        <div class="actions full"><a class="button ghost" asp-action="Index">إلغاء</a><button class="button primary" type="submit">نشر الحصة</button></div>
+    </form>
+</section>
