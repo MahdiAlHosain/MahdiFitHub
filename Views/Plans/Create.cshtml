@@ -1,0 +1,15 @@
+@model CreatePlanViewModel
+@{
+    ViewData["Title"] = "باقة جديدة";
+}
+<header class="page-header"><div><span class="eyebrow">عرض جديد</span><h1>إنشاء باقة اشتراك</h1><p>حدد السعر والمدة وعدد الزيارات.</p></div></header>
+<section class="panel form-panel">
+    <form asp-action="Create" method="post" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="validation full"></div>
+        <div class="full"><label asp-for="Name">اسم الباقة</label><input asp-for="Name" /><span asp-validation-for="Name" class="validation"></span></div>
+        <div><label asp-for="DurationDays">المدة بالأيام</label><input asp-for="DurationDays" /><span asp-validation-for="DurationDays" class="validation"></span></div>
+        <div><label asp-for="Price">السعر بالدولار</label><input asp-for="Price" /><span asp-validation-for="Price" class="validation"></span></div>
+        <div><label asp-for="WeeklyVisitLimit">الزيارات الأسبوعية</label><input asp-for="WeeklyVisitLimit" /><span asp-validation-for="WeeklyVisitLimit" class="validation"></span></div>
+        <div class="actions full"><a class="button ghost" asp-action="Index">إلغاء</a><button class="button primary" type="submit">حفظ الباقة</button></div>
+    </form>
+</section>

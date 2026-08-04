@@ -1,0 +1,19 @@
+@model IReadOnlyList<MembershipPlan>
+@{
+    ViewData["Title"] = "باقات الاشتراك";
+}
+<header class="page-header">
+    <div><span class="eyebrow">الاشتراكات</span><h1>باقات النادي</h1><p>صمّم عروضًا مرنة تناسب الأعضاء.</p></div>
+    <a class="button primary" asp-action="Create">+ باقة جديدة</a>
+</header>
+<section class="plan-grid">
+@foreach (var plan in Model)
+{
+    <article class="plan-card @(plan.IsActive ? "" : "disabled")">
+        <div class="plan-top"><span class="status @(plan.IsActive ? "on" : "off")">@(plan.IsActive ? "متاحة" : "موقوفة")</span><strong>$@plan.Price</strong></div>
+        <h2>@plan.Name</h2>
+        <ul><li>@plan.DurationDays يومًا</li><li>@plan.WeeklyVisitLimit زيارات أسبوعيًا</li><li>@plan.Members.Count عضوًا حاليًا</li></ul>
+        <form asp-action="Toggle" asp-route-id="@plan.Id" method="post"><button class="button ghost wide" type="submit">@(plan.IsActive ? "إيقاف الباقة" : "تفعيل الباقة")</button></form>
+    </article>
+}
+</section>
