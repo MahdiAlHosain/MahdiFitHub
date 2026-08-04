@@ -1,0 +1,35 @@
+@model LoginViewModel
+@{
+    ViewData["Title"] = "تسجيل الدخول";
+}
+<section class="login-page">
+    <div class="login-art">
+        <div class="art-copy">
+            <span class="eyebrow">MAHDIFIT HUB</span>
+            <h1>إدارة أذكى.<br />أداء أقوى.</h1>
+            <p>منصة عربية خفيفة تجمع الأعضاء والمدربين والحصص والاشتراكات في مكان واحد.</p>
+        </div>
+    </div>
+    <div class="login-card">
+        <div class="brand login-brand"><span class="brand-mark">M</span><span>MahdiFit</span></div>
+        <h2>مرحبًا بعودتك</h2>
+        <p class="muted">أدخل بيانات حسابك للمتابعة</p>
+        <form asp-action="Login" asp-route-returnUrl="@ViewBag.ReturnUrl" method="post" class="form-stack">
+            <div asp-validation-summary="ModelOnly" class="validation"></div>
+            <label asp-for="Email">البريد الإلكتروني</label>
+            <input asp-for="Email" autocomplete="username" placeholder="name@example.com" />
+            <span asp-validation-for="Email" class="validation"></span>
+            <label asp-for="Password">كلمة المرور</label>
+            <input asp-for="Password" autocomplete="current-password" placeholder="••••••••" />
+            <span asp-validation-for="Password" class="validation"></span>
+            <label class="check"><input asp-for="RememberMe" /> تذكّرني على هذا الجهاز</label>
+            <button class="button primary wide" type="submit">دخول إلى النظام</button>
+        </form>
+        <details class="demo-accounts">
+            <summary>حسابات التجربة</summary>
+            <code>admin@mahdifit.local / Admin123!</code>
+            <code>trainer@mahdifit.local / Trainer123!</code>
+            <code>member@mahdifit.local / Member123!</code>
+        </details>
+    </div>
+</section>
