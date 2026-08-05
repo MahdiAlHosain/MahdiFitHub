@@ -68,7 +68,11 @@ public sealed class SessionsController(GymStore store) : Controller
         var memberId = CurrentUserId();
         var result = await store.BookAsync(id, memberId);
         if (result == "missing") return NotFound();
-        if (result == "duplicate")
+        if (result == "no-membership")
+        {
+            TempData["Error"] = "تحتاج إلى عضوية فعالة قبل حجز الحصة.";
+        }
+        else if (result == "duplicate")
         {
             TempData["Error"] = "أنت مسجل في هذه الحصة مسبقًا.";
         }
