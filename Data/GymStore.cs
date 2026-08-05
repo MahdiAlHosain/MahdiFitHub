@@ -19,8 +19,27 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
         {
             if (File.Exists(_filePath))
             {
-                await using var input = File.OpenRead(_filePath);
-                _data = await JsonSerializer.DeserializeAsync<StoreDocument>(input, _jsonOptions) ?? new();
+                await using (var input = File.OpenRead(_filePath))
+                    _data = await JsonSerializer.DeserializeAsync<StoreDocument>(input, _jsonOptions) ?? new();
+                if (_data.SchemaVersion < 2)
+                {
+                    foreach (var member in _data.Users.Where(user => user.Role == UserRoles.Member && user.MembershipPlanId is not null))
+                    {
+                        var plan = _data.Plans.SingleOrDefault(item => item.Id == member.MembershipPlanId);
+                        if (plan is null) continue;
+                        _data.Memberships.Add(new Membership
+                        {
+                            Id = NextId(_data.Memberships.Select(item => item.Id)),
+                            MemberId = member.Id,
+                            PlanId = plan.Id,
+                            StartDateUtc = member.JoinedAtUtc.Date,
+                            EndDateUtc = DateTime.UtcNow.Date.AddDays(plan.DurationDays - 1),
+                            PricePaid = plan.Price
+                        });
+                    }
+                    _data.SchemaVersion = 2;
+                    await SaveUnsafeAsync();
+                }
             }
             else
             {
@@ -67,6 +86,71 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
         return plans;
     });
 
+    public async Task<IReadOnlyList<Membership>> GetMembershipsAsync() => await ReadAsync<IReadOnlyList<Membership>>(() =>
+        HydrateMemberships(_data.Memberships.OrderByDescending(item => item.StartDateUtc)).ToList());
+
+    public async Task<IReadOnlyList<AppUser>> GetActiveMembersAsync() => await ReadAsync<IReadOnlyList<AppUser>>(() =>
+        _data.Users.Where(user => user.Role == UserRoles.Member && user.IsActive).OrderBy(user => user.FullName).ToList());
+
+    public async Task<string> AddMembershipAsync(int memberId, int planId, DateTime startDate) => await WriteAsync(() =>
+    {
+        var member = _data.Users.SingleOrDefault(user => user.Id == memberId && user.Role == UserRoles.Member && user.IsActive);
+        if (member is null) return "member-missing";
+
+        var plan = _data.Plans.SingleOrDefault(item => item.Id == planId && item.IsActive);
+        if (plan is null) return "plan-missing";
+
+        if (_data.Memberships.Any(item => item.MemberId == memberId && item.CancelledAtUtc is null && item.EndDateUtc.Date >= DateTime.UtcNow.Date))
+            return "already-active";
+
+        var startsAt = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+        _data.Memberships.Add(new Membership
+        {
+            Id = NextId(_data.Memberships.Select(item => item.Id)),
+            MemberId = memberId,
+            PlanId = planId,
+            StartDateUtc = startsAt,
+            EndDateUtc = startsAt.AddDays(plan.DurationDays - 1),
+            PricePaid = plan.Price
+        });
+        member.MembershipPlanId = planId;
+        return "ok";
+    });
+
+    public async Task<bool> CancelMembershipAsync(int id) => await WriteAsync(() =>
+    {
+        var membership = _data.Memberships.SingleOrDefault(item => item.Id == id);
+        if (membership is null || membership.CancelledAtUtc is not null) return false;
+        membership.CancelledAtUtc = DateTime.UtcNow;
+        if (_data.Users.SingleOrDefault(user => user.Id == membership.MemberId) is { } member)
+            member.MembershipPlanId = null;
+        return true;
+    });
+
+    public async Task<string> RenewMembershipAsync(int id) => await WriteAsync(() =>
+    {
+        var previous = _data.Memberships.SingleOrDefault(item => item.Id == id);
+        if (previous is null) return "missing";
+        var plan = _data.Plans.SingleOrDefault(item => item.Id == previous.PlanId && item.IsActive);
+        if (plan is null) return "plan-missing";
+        if (_data.Memberships.Any(item => item.MemberId == previous.MemberId && item.Id != id && item.CancelledAtUtc is null && item.EndDateUtc.Date >= DateTime.UtcNow.Date))
+            return "already-active";
+
+        var start = previous.IsActive ? previous.EndDateUtc.Date.AddDays(1) : DateTime.UtcNow.Date;
+        _data.Memberships.Add(new Membership
+        {
+            Id = NextId(_data.Memberships.Select(item => item.Id)),
+            MemberId = previous.MemberId,
+            PlanId = previous.PlanId,
+            StartDateUtc = DateTime.SpecifyKind(start, DateTimeKind.Utc),
+            EndDateUtc = DateTime.SpecifyKind(start, DateTimeKind.Utc).AddDays(plan.DurationDays - 1),
+            PricePaid = plan.Price
+        });
+        if (_data.Users.SingleOrDefault(user => user.Id == previous.MemberId) is { } member)
+            member.MembershipPlanId = plan.Id;
+        return "ok";
+    });
+
     public async Task AddPlanAsync(MembershipPlan plan) => await WriteAsync(() =>
     {
         plan.Id = NextId(_data.Plans.Select(item => item.Id));
@@ -107,6 +191,7 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
     {
         var session = _data.Sessions.SingleOrDefault(item => item.Id == sessionId);
         if (session is null || session.StartsAtUtc <= DateTime.UtcNow) return "missing";
+        if (!_data.Memberships.Any(item => item.MemberId == memberId && item.CancelledAtUtc is null && item.StartDateUtc.Date <= DateTime.UtcNow.Date && item.EndDateUtc.Date >= DateTime.UtcNow.Date)) return "no-membership";
         if (_data.Bookings.Any(item => item.SessionId == sessionId && item.MemberId == memberId)) return "duplicate";
         if (_data.Bookings.Count(item => item.SessionId == sessionId) >= session.Capacity) return "full";
         _data.Bookings.Add(new Booking { Id = NextId(_data.Bookings.Select(item => item.Id)), SessionId = sessionId, MemberId = memberId });
@@ -129,6 +214,16 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
             session.Trainer = _data.Users.SingleOrDefault(user => user.Id == session.TrainerId);
             session.Bookings = _data.Bookings.Where(booking => booking.SessionId == session.Id).ToList();
             yield return session;
+        }
+    }
+
+    private IEnumerable<Membership> HydrateMemberships(IEnumerable<Membership> memberships)
+    {
+        foreach (var membership in memberships)
+        {
+            membership.Member = _data.Users.SingleOrDefault(user => user.Id == membership.MemberId);
+            membership.Plan = _data.Plans.SingleOrDefault(plan => plan.Id == membership.PlanId);
+            yield return membership;
         }
     }
 
@@ -155,6 +250,7 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
 
     private void Seed()
     {
+        _data.SchemaVersion = 2;
         var monthly = new MembershipPlan { Id = 1, Name = "المرن الشهري", DurationDays = 30, Price = 35, WeeklyVisitLimit = 4 };
         var premium = new MembershipPlan { Id = 2, Name = "الأداء المفتوح", DurationDays = 90, Price = 85, WeeklyVisitLimit = 7 };
         _data.Plans.AddRange([monthly, premium]);
@@ -167,6 +263,16 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
         member.MembershipPlanId = monthly.Id;
         member.PasswordHash = hasher.HashPassword(member, "Member123!");
         _data.Users.AddRange([admin, trainer, member]);
+
+        _data.Memberships.Add(new Membership
+        {
+            Id = 1,
+            MemberId = member.Id,
+            PlanId = monthly.Id,
+            StartDateUtc = DateTime.UtcNow.Date,
+            EndDateUtc = DateTime.UtcNow.Date.AddDays(monthly.DurationDays - 1),
+            PricePaid = monthly.Price
+        });
 
         _data.Sessions.AddRange([
             new GymSession { Id = 1, Title = "قوة وظيفية", Description = "حصة متدرجة تجمع تمارين الحركة والقوة.", Room = "القاعة A", StartsAtUtc = DateTime.UtcNow.AddDays(1).Date.AddHours(15), DurationMinutes = 55, Capacity = 16, TrainerId = trainer.Id },
@@ -186,9 +292,11 @@ public sealed class GymStore(IWebHostEnvironment environment, IPasswordHasher<Ap
 
     private sealed class StoreDocument
     {
+        public int SchemaVersion { get; set; }
         public List<AppUser> Users { get; set; } = [];
         public List<MembershipPlan> Plans { get; set; } = [];
         public List<GymSession> Sessions { get; set; } = [];
         public List<Booking> Bookings { get; set; } = [];
+        public List<Membership> Memberships { get; set; } = [];
     }
 }
