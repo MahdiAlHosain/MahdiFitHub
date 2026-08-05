@@ -83,3 +83,16 @@ public sealed class DashboardViewModel
     public int TotalBookings { get; init; }
     public IReadOnlyList<GymSession> NextSessions { get; init; } = [];
 }
+
+public sealed class CreateMembershipViewModel
+{
+    [Range(1, int.MaxValue, ErrorMessage = "اختر عضوًا.")]
+    public int MemberId { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "اختر خطة اشتراك.")]
+    public int PlanId { get; set; }
+
+    [Required]
+    [DataType(DataType.Date)]
+    public DateTime StartDate { get; set; } = DateTime.Today;
+}

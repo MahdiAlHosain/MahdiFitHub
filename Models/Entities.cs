@@ -38,6 +38,8 @@ public sealed class AppUser
     public ICollection<Booking> Bookings { get; set; } = [];
     [JsonIgnore]
     public ICollection<GymSession> LedSessions { get; set; } = [];
+    [JsonIgnore]
+    public ICollection<Membership> Memberships { get; set; } = [];
 }
 
 public sealed class MembershipPlan
@@ -53,6 +55,29 @@ public sealed class MembershipPlan
     public bool IsActive { get; set; } = true;
     [JsonIgnore]
     public ICollection<AppUser> Members { get; set; } = [];
+}
+
+public sealed class Membership
+{
+    public int Id { get; set; }
+    public int MemberId { get; set; }
+    [JsonIgnore]
+    public AppUser? Member { get; set; }
+    public int PlanId { get; set; }
+    [JsonIgnore]
+    public MembershipPlan? Plan { get; set; }
+    public DateTime StartDateUtc { get; set; }
+    public DateTime EndDateUtc { get; set; }
+    public DateTime? CancelledAtUtc { get; set; }
+    public decimal PricePaid { get; set; }
+
+    [JsonIgnore]
+    public bool IsActive => CancelledAtUtc is null && StartDateUtc.Date <= DateTime.UtcNow.Date && EndDateUtc.Date >= DateTime.UtcNow.Date;
+
+    [JsonIgnore]
+    public string Status => CancelledAtUtc is not null
+        ? "Cancelled"
+        : EndDateUtc.Date < DateTime.UtcNow.Date ? "Expired" : StartDateUtc.Date > DateTime.UtcNow.Date ? "Scheduled" : "Active";
 }
 
 public sealed class GymSession
