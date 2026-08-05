@@ -1,0 +1,44 @@
+@model IReadOnlyList<Membership>
+@{
+    ViewData["Title"] = "إدارة العضويات";
+}
+<header class="page-header">
+    <div><span class="eyebrow">الاشتراكات</span><h1>إدارة العضويات</h1><p>تابع حالة عضويات النادي وجدّدها أو ألغها من مكان واحد.</p></div>
+    <a class="button primary" asp-action="Create">+ عضوية جديدة</a>
+</header>
+<section class="panel table-panel">
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>العضو</th><th>الخطة</th><th>تاريخ البداية</th><th>تاريخ النهاية</th><th>المبلغ</th><th>الحالة</th><th>الإجراء</th></tr></thead>
+            <tbody>
+            @if (Model.Count == 0)
+            {
+                <tr><td colspan="7" class="empty-row">لا توجد عضويات بعد.</td></tr>
+            }
+            @foreach (var membership in Model)
+            {
+                <tr>
+                    <td><strong>@membership.Member?.FullName</strong><small>@membership.Member?.Email</small></td>
+                    <td>@membership.Plan?.Name</td>
+                    <td>@membership.StartDateUtc.ToString("yyyy/MM/dd")</td>
+                    <td>@membership.EndDateUtc.ToString("yyyy/MM/dd")</td>
+                    <td>$@membership.PricePaid</td>
+                    <td><span class="status @(membership.IsActive ? "on" : "off")">@(membership.Status == "Active" ? "فعالة" : membership.Status == "Scheduled" ? "مجدولة" : membership.Status == "Expired" ? "منتهية" : "ملغاة")</span></td>
+                    <td>
+                        <div class="inline-actions">
+                        @if (membership.IsActive)
+                        {
+                            <form asp-action="Cancel" asp-route-id="@membership.Id" method="post"><button class="link-button danger" type="submit">إلغاء</button></form>
+                        }
+                        else if (membership.Status != "Scheduled")
+                        {
+                            <form asp-action="Renew" asp-route-id="@membership.Id" method="post"><button class="button ghost small" type="submit">تجديد</button></form>
+                        }
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

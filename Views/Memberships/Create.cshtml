@@ -1,0 +1,14 @@
+@model CreateMembershipViewModel
+@{
+    ViewData["Title"] = "إنشاء عضوية";
+}
+<header class="page-header"><div><span class="eyebrow">عضوية جديدة</span><h1>إسناد خطة إلى عضو</h1><p>اختر العضو والخطة، وسيُحسب تاريخ الانتهاء والسعر تلقائيًا.</p></div></header>
+<section class="panel form-panel">
+    <form asp-action="Create" method="post" class="form-grid">
+        <div asp-validation-summary="ModelOnly" class="validation full"></div>
+        <div><label asp-for="MemberId">العضو</label><select asp-for="MemberId" asp-items="ViewBag.Members"><option value="">اختر عضوًا</option></select><span asp-validation-for="MemberId" class="validation"></span></div>
+        <div><label asp-for="PlanId">خطة الاشتراك</label><select asp-for="PlanId" asp-items="ViewBag.Plans"><option value="">اختر خطة</option></select><span asp-validation-for="PlanId" class="validation"></span></div>
+        <div class="full"><label asp-for="StartDate">تاريخ البداية</label><input asp-for="StartDate" /><span asp-validation-for="StartDate" class="validation"></span></div>
+        <div class="actions full"><a class="button ghost" asp-action="Index">رجوع</a><button class="button primary" type="submit">حفظ العضوية</button></div>
+    </form>
+</section>
