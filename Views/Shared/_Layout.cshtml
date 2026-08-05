@@ -19,6 +19,7 @@
             <a asp-controller="Sessions" asp-action="Index">الحصص والحجوزات</a>
             @if (User.IsInRole(UserRoles.Admin))
             {
+                <a asp-controller="Memberships" asp-action="Index">إدارة العضويات</a>
                 <a asp-controller="People" asp-action="Index">الأعضاء والفريق</a>
                 <a asp-controller="Plans" asp-action="Index">باقات الاشتراك</a>
             }
