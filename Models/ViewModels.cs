@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 
 namespace MahdiFitHub.Models;
 
@@ -95,4 +96,46 @@ public sealed class CreateMembershipViewModel
     [Required]
     [DataType(DataType.Date)]
     public DateTime StartDate { get; set; } = DateTime.Today;
+}
+
+public sealed class AddMealViewModel
+{
+    [Range(1, int.MaxValue, ErrorMessage = "اختر نوع الطعام بعد تحليل الصورة.")]
+    public int FoodItemId { get; set; }
+
+    [Range(typeof(decimal), "0.25", "10", ErrorMessage = "حدد كمية بين ربع حصة و10 حصص.")]
+    public decimal ServingCount { get; set; } = 1;
+
+    [Required, StringLength(30)]
+    public string MealType { get; set; } = "غداء";
+
+    public IFormFile? Image { get; set; }
+
+    [StringLength(200)]
+    public string? DetectedLabel { get; set; }
+}
+
+public sealed class NutritionDashboardViewModel
+{
+    public int DailyCalorieGoal { get; init; }
+    public int DailyProteinGoal { get; init; }
+    public IReadOnlyList<FoodItem> FoodCatalog { get; init; } = [];
+    public IReadOnlyList<MealLog> TodayMeals { get; init; } = [];
+    public int ConsumedCalories => TodayMeals.Sum(meal => meal.Calories);
+    public int RemainingCalories => Math.Max(0, DailyCalorieGoal - ConsumedCalories);
+    public decimal ProteinGrams => TodayMeals.Sum(meal => meal.ProteinGrams);
+    public decimal CarbohydrateGrams => TodayMeals.Sum(meal => meal.CarbohydrateGrams);
+    public decimal FatGrams => TodayMeals.Sum(meal => meal.FatGrams);
+    public int ProgressPercentage => DailyCalorieGoal <= 0
+        ? 0
+        : Math.Min(100, (int)Math.Round(ConsumedCalories * 100d / DailyCalorieGoal));
+}
+
+public sealed class UpdateNutritionGoalViewModel
+{
+    [Range(1000, 6000, ErrorMessage = "هدف السعرات يجب أن يكون بين 1000 و6000.")]
+    public int DailyCalories { get; set; } = 2200;
+
+    [Range(30, 350, ErrorMessage = "هدف البروتين يجب أن يكون بين 30 و350 غراماً.")]
+    public int DailyProteinGrams { get; set; } = 120;
 }

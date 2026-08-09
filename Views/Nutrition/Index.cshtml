@@ -1,0 +1,300 @@
+@model NutritionDashboardViewModel
+@{
+    ViewData["Title"] = "التغذية الذكية";
+}
+
+<header class="page-header nutrition-header">
+    <div>
+        <span class="eyebrow">MAHDIFIT NUTRITION</span>
+        <h1>غذاؤك تحت السيطرة</h1>
+        <p>صوّر وجبتك، راجع التقدير، وأضفها إلى سجل سعراتك اليومي.</p>
+    </div>
+    <span class="ai-badge"><span></span> تحليل مجاني على جهازك</span>
+</header>
+
+<section class="nutrition-summary">
+    <article class="calorie-orbit" style="--progress: @Model.ProgressPercentage%">
+        <div class="orbit-content">
+            <strong>@Model.ConsumedCalories</strong>
+            <span>من @Model.DailyCalorieGoal سعرة</span>
+        </div>
+    </article>
+    <article class="nutrition-stat">
+        <span>المتبقي اليوم</span>
+        <strong>@Model.RemainingCalories</strong>
+        <small>سعرة حرارية</small>
+    </article>
+    <article class="nutrition-stat protein">
+        <span>البروتين</span>
+        <strong>@Model.ProteinGrams.ToString("0.#")<small> غ</small></strong>
+        <div class="mini-progress"><i style="width: @Math.Min(100, Model.DailyProteinGoal == 0 ? 0 : (int)(Model.ProteinGrams * 100 / Model.DailyProteinGoal))%"></i></div>
+        <small>الهدف @Model.DailyProteinGoal غ</small>
+    </article>
+    <article class="nutrition-stat macro">
+        <span>الكربوهيدرات / الدهون</span>
+        <strong>@Model.CarbohydrateGrams.ToString("0.#")<small> غ</small></strong>
+        <small>@Model.FatGrams.ToString("0.#") غ دهون</small>
+    </article>
+</section>
+
+<section class="nutrition-grid">
+    <article class="panel scanner-panel">
+        <div class="panel-heading">
+            <div>
+                <span class="eyebrow">AI MEAL SCANNER</span>
+                <h2>حلّل صورة وجبتك</h2>
+            </div>
+            <span class="step-pill">01</span>
+        </div>
+
+        <form asp-action="AddMeal" method="post" enctype="multipart/form-data" id="mealForm" class="scanner-form">
+            <div class="camera-drop" id="cameraDrop">
+                <input type="file" name="Image" id="mealImage" accept="image/jpeg,image/png,image/webp" capture="environment" hidden />
+                <img id="mealPreview" alt="معاينة الوجبة" hidden />
+                <div class="camera-placeholder" id="cameraPlaceholder">
+                    <span class="camera-icon">◉</span>
+                    <strong>التقط صورة واضحة من الأعلى</strong>
+                    <small>JPG أو PNG أو WebP — حتى 5MB</small>
+                </div>
+                <label for="mealImage" class="button primary camera-button">فتح الكاميرا أو اختيار صورة</label>
+            </div>
+
+            <button type="button" class="button analyze-button" id="analyzeButton" disabled>
+                <span class="spark">✦</span>
+                <span id="analyzeText">تحليل الطعام مجاناً</span>
+            </button>
+
+            <div class="scan-result" id="scanResult" aria-live="polite">
+                <span class="result-icon">⌁</span>
+                <div>
+                    <strong>بانتظار صورة الوجبة</strong>
+                    <p>سيظهر هنا الطعام المتوقع والقيمة الغذائية التقديرية.</p>
+                </div>
+            </div>
+
+            <input type="hidden" name="DetectedLabel" id="detectedLabel" />
+            <div class="meal-fields">
+                <div>
+                    <label for="foodSelect">تأكيد نوع الطعام</label>
+                    <select name="FoodItemId" id="foodSelect" required>
+                        <option value="">اختر الطعام أو حلّل الصورة</option>
+                        @foreach (var food in Model.FoodCatalog)
+                        {
+                            <option value="@food.Id"
+                                    data-keywords="@string.Join('|', food.RecognitionKeywords)"
+                                    data-calories="@food.Calories"
+                                    data-protein="@food.ProteinGrams"
+                                    data-carbs="@food.CarbohydrateGrams"
+                                    data-fat="@food.FatGrams"
+                                    data-serving="@food.ServingName">@food.Name — @food.Calories سعرة / @food.ServingName</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label for="servingCount">الكمية</label>
+                    <input type="number" name="ServingCount" id="servingCount" value="1" min="0.25" max="10" step="0.25" required />
+                </div>
+                <div>
+                    <label for="mealType">نوع الوجبة</label>
+                    <select name="MealType" id="mealType">
+                        <option>فطور</option>
+                        <option selected>غداء</option>
+                        <option>عشاء</option>
+                        <option>وجبة خفيفة</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="live-estimate" id="liveEstimate" hidden>
+                <span><strong id="estimateCalories">0</strong> سعرة</span>
+                <span><strong id="estimateProtein">0</strong> غ بروتين</span>
+                <span><strong id="estimateCarbs">0</strong> غ كربوهيدرات</span>
+                <span><strong id="estimateFat">0</strong> غ دهون</span>
+            </div>
+
+            <button type="submit" class="button primary wide">إضافة إلى سجل اليوم</button>
+            <p class="accuracy-note">القيم تقديرية وتعتمد على حجم الحصة؛ راجع الطعام والكمية قبل الحفظ.</p>
+        </form>
+    </article>
+
+    <aside class="nutrition-side">
+        <article class="panel goal-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="eyebrow">MY TARGET</span>
+                    <h2>هدفي اليومي</h2>
+                </div>
+                <span class="step-pill">02</span>
+            </div>
+            <form asp-action="UpdateGoal" method="post" class="goal-form">
+                <label>السعرات اليومية
+                    <input type="number" name="DailyCalories" value="@Model.DailyCalorieGoal" min="1000" max="6000" required />
+                </label>
+                <label>البروتين اليومي (غ)
+                    <input type="number" name="DailyProteinGrams" value="@Model.DailyProteinGoal" min="30" max="350" required />
+                </label>
+                <button class="button ghost wide" type="submit">تحديث الهدف</button>
+            </form>
+        </article>
+
+        <article class="nutrition-tip">
+            <span>نصيحة اليوم</span>
+            <strong>صوّر الطبق كاملاً وبإضاءة جيدة</strong>
+            <p>كلما كانت مكونات الوجبة واضحة ومنفصلة، تحسّن اقتراح نوع الطعام.</p>
+        </article>
+    </aside>
+</section>
+
+<section class="panel meals-panel">
+    <div class="panel-heading">
+        <div>
+            <span class="eyebrow">TODAY'S LOG</span>
+            <h2>وجبات اليوم</h2>
+        </div>
+        <span class="meal-count">@Model.TodayMeals.Count وجبات</span>
+    </div>
+
+    @if (Model.TodayMeals.Count == 0)
+    {
+        <div class="empty-meals">
+            <span>🍽️</span>
+            <strong>لم تسجل أي وجبة بعد</strong>
+            <p>التقط أول صورة وابدأ متابعة سعراتك.</p>
+        </div>
+    }
+    else
+    {
+        <div class="meal-log">
+            @foreach (var meal in Model.TodayMeals)
+            {
+                <article>
+                    @if (!string.IsNullOrWhiteSpace(meal.ImagePath))
+                    {
+                        <img src="@meal.ImagePath" alt="@meal.FoodName" />
+                    }
+                    else
+                    {
+                        <span class="meal-fallback">🍴</span>
+                    }
+                    <div class="meal-copy">
+                        <span>@meal.MealType · @meal.LoggedAtUtc.ToLocalTime().ToString("HH:mm")</span>
+                        <h3>@meal.FoodName</h3>
+                        <p>@meal.ServingCount.ToString("0.##") × @meal.ServingName</p>
+                    </div>
+                    <div class="meal-energy">
+                        <strong>@meal.Calories</strong>
+                        <span>سعرة</span>
+                    </div>
+                    <div class="meal-macros">
+                        <span>P @meal.ProteinGrams.ToString("0.#")g</span>
+                        <span>C @meal.CarbohydrateGrams.ToString("0.#")g</span>
+                        <span>F @meal.FatGrams.ToString("0.#")g</span>
+                    </div>
+                    <form asp-action="DeleteMeal" method="post">
+                        <input type="hidden" name="id" value="@meal.Id" />
+                        <button type="submit" class="meal-delete" title="حذف الوجبة">×</button>
+                    </form>
+                </article>
+            }
+        </div>
+    }
+</section>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@tensorflow-models/mobilenet@2.1.1"></script>
+    <script>
+        (() => {
+            const imageInput = document.getElementById('mealImage');
+            const preview = document.getElementById('mealPreview');
+            const placeholder = document.getElementById('cameraPlaceholder');
+            const analyzeButton = document.getElementById('analyzeButton');
+            const analyzeText = document.getElementById('analyzeText');
+            const result = document.getElementById('scanResult');
+            const detectedLabel = document.getElementById('detectedLabel');
+            const foodSelect = document.getElementById('foodSelect');
+            const quantityInput = document.getElementById('servingCount');
+            const estimate = document.getElementById('liveEstimate');
+            let classifier = null;
+            let previewUrl = null;
+
+            imageInput.addEventListener('change', () => {
+                const file = imageInput.files?.[0];
+                if (!file) return;
+                if (previewUrl) URL.revokeObjectURL(previewUrl);
+                previewUrl = URL.createObjectURL(file);
+                preview.src = previewUrl;
+                preview.hidden = false;
+                placeholder.hidden = true;
+                analyzeButton.disabled = false;
+                result.className = 'scan-result';
+                result.innerHTML = '<span class="result-icon">✦</span><div><strong>الصورة جاهزة للتحليل</strong><p>اضغط تحليل الطعام لبدء التعرّف المجاني.</p></div>';
+            });
+
+            analyzeButton.addEventListener('click', async () => {
+                analyzeButton.disabled = true;
+                analyzeButton.classList.add('loading');
+                analyzeText.textContent = classifier ? 'جارٍ تحليل الوجبة...' : 'جارٍ تحميل الذكاء المجاني...';
+                result.className = 'scan-result scanning';
+                result.innerHTML = '<span class="result-icon">✦</span><div><strong>نحلل مكونات الصورة</strong><p>قد يستغرق التحليل الأول بضع ثوانٍ.</p></div>';
+
+                try {
+                    if (!window.mobilenet) throw new Error('model-unavailable');
+                    classifier ??= await mobilenet.load({ version: 2, alpha: 1.0 });
+                    const predictions = await classifier.classify(preview, 5);
+                    const options = [...foodSelect.options].filter(option => option.value);
+                    let bestMatch = null;
+
+                    for (const prediction of predictions) {
+                        const label = prediction.className.toLowerCase();
+                        for (const option of options) {
+                            const keywords = (option.dataset.keywords || '').split('|').filter(Boolean);
+                            const matchingKeyword = keywords
+                                .filter(keyword => label.includes(keyword.toLowerCase()))
+                                .sort((a, b) => b.length - a.length)[0];
+                            if (!matchingKeyword) continue;
+                            const score = prediction.probability + (matchingKeyword.length / 100);
+                            if (!bestMatch || score > bestMatch.score) bestMatch = { option, prediction, score };
+                        }
+                    }
+
+                    detectedLabel.value = predictions.map(item => `${item.className} (${Math.round(item.probability * 100)}%)`).join(', ');
+                    if (bestMatch) {
+                        foodSelect.value = bestMatch.option.value;
+                        updateEstimate();
+                        const confidence = Math.round(bestMatch.prediction.probability * 100);
+                        result.className = 'scan-result matched';
+                        result.innerHTML = `<span class="result-icon">✓</span><div><strong>نتوقع أنها ${bestMatch.option.text.split(' — ')[0]}</strong><p>ثقة الصورة ${confidence}% — راجع الاختيار والكمية قبل الحفظ.</p></div>`;
+                    } else {
+                        result.className = 'scan-result uncertain';
+                        result.innerHTML = '<span class="result-icon">?</span><div><strong>لم نتعرّف على الطبق بثقة كافية</strong><p>اختر نوع الطعام يدوياً من القائمة، ثم حدد الكمية.</p></div>';
+                    }
+                } catch (error) {
+                    result.className = 'scan-result uncertain';
+                    result.innerHTML = '<span class="result-icon">!</span><div><strong>تعذر تشغيل محلل الصور الآن</strong><p>يمكنك اختيار الطعام يدوياً؛ بقية نظام السعرات يعمل بشكل طبيعي ومجاني.</p></div>';
+                } finally {
+                    analyzeButton.disabled = false;
+                    analyzeButton.classList.remove('loading');
+                    analyzeText.textContent = 'إعادة تحليل الصورة';
+                }
+            });
+
+            function updateEstimate() {
+                const selected = foodSelect.selectedOptions[0];
+                if (!selected?.value) {
+                    estimate.hidden = true;
+                    return;
+                }
+                const quantity = Math.max(.25, Number(quantityInput.value) || 1);
+                document.getElementById('estimateCalories').textContent = Math.round(Number(selected.dataset.calories) * quantity);
+                document.getElementById('estimateProtein').textContent = (Number(selected.dataset.protein) * quantity).toFixed(1);
+                document.getElementById('estimateCarbs').textContent = (Number(selected.dataset.carbs) * quantity).toFixed(1);
+                document.getElementById('estimateFat').textContent = (Number(selected.dataset.fat) * quantity).toFixed(1);
+                estimate.hidden = false;
+            }
+
+            foodSelect.addEventListener('change', updateEstimate);
+            quantityInput.addEventListener('input', updateEstimate);
+        })();
+    </script>
+}

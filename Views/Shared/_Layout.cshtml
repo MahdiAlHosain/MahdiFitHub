@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] — MahdiFit Hub</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/nutrition.css" asp-append-version="true" />
 </head>
 <body>
 @if (User.Identity?.IsAuthenticated == true)
@@ -17,6 +18,7 @@
         <nav>
             <a asp-controller="Home" asp-action="Index">لوحة المتابعة</a>
             <a asp-controller="Sessions" asp-action="Index">الحصص والحجوزات</a>
+            <a asp-controller="Nutrition" asp-action="Index">التغذية والسعرات</a>
             @if (User.IsInRole(UserRoles.Admin))
             {
                 <a asp-controller="Memberships" asp-action="Index">إدارة العضويات</a>

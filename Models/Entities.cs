@@ -114,3 +114,56 @@ public sealed class Booking
     public AppUser? Member { get; set; }
     public DateTime BookedAtUtc { get; set; } = DateTime.UtcNow;
 }
+
+public sealed class FoodItem
+{
+    public int Id { get; set; }
+
+    [MaxLength(100)]
+    public required string Name { get; set; }
+
+    [MaxLength(80)]
+    public required string ServingName { get; set; }
+
+    public int Calories { get; set; }
+    public decimal ProteinGrams { get; set; }
+    public decimal CarbohydrateGrams { get; set; }
+    public decimal FatGrams { get; set; }
+    public List<string> RecognitionKeywords { get; set; } = [];
+}
+
+public sealed class MealLog
+{
+    public int Id { get; set; }
+    public int MemberId { get; set; }
+    public int FoodItemId { get; set; }
+
+    [MaxLength(100)]
+    public required string FoodName { get; set; }
+
+    [MaxLength(80)]
+    public required string ServingName { get; set; }
+
+    [MaxLength(30)]
+    public required string MealType { get; set; }
+
+    public decimal ServingCount { get; set; }
+    public int Calories { get; set; }
+    public decimal ProteinGrams { get; set; }
+    public decimal CarbohydrateGrams { get; set; }
+    public decimal FatGrams { get; set; }
+    public DateTime LoggedAtUtc { get; set; } = DateTime.UtcNow;
+
+    [MaxLength(240)]
+    public string? ImagePath { get; set; }
+
+    [MaxLength(200)]
+    public string? DetectedLabel { get; set; }
+}
+
+public sealed class NutritionGoal
+{
+    public int MemberId { get; set; }
+    public int DailyCalories { get; set; } = 2200;
+    public int DailyProteinGrams { get; set; } = 120;
+}
